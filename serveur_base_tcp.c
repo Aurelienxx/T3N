@@ -21,7 +21,7 @@ int main(int argc, char *argv[]){
 	struct sockaddr_in pointDeRencontreDistant;
 	char messageRecu[LG_MESSAGE]; /* le message de la couche Application ! */
 	char messageEnvoye[LG_MESSAGE];
-	char tab[9];
+	char tab[] = {' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' '};
 	int ecrits, lus; /* nb d’octets ecrits et lus */
 	int retour;
 
@@ -78,8 +78,10 @@ int main(int argc, char *argv[]){
 		// On réception les données du client (cf. protocole)
 		//lus = read(socketDialogue, messageRecu, LG_MESSAGE*sizeof(char)); // ici appel bloquant
 
+		int joueur,ordinateur ;
 		while (1){
-			lus = recv(socketDialogue, tab, sizeof(tab), 0); // Attente de la réception des données
+			lus = recv(socketDialogue, &joueur, sizeof(joueur), 0); // Attente de la réception des données
+			tab[joueur] = 'X';
 			switch(lus) {
 				case -1: /* une erreur !*/
 						perror("recv");
@@ -90,12 +92,12 @@ int main(int argc, char *argv[]){
 						close(socketDialogue);
 					return 0;
 				default: /* réception de n octets */
-						int random = rand() % 9;  
-						tab[random] = 'O';
+						ordinateur = rand() % 9;  
+						tab[ordinateur] = 'O';
 					break;
 			}
 
-			send(socketDialogue, tab, sizeof(tab), 0);  // Envoi du tableau modifié
+			send(socketDialogue, &ordinateur, sizeof(ordinateur), 0);  // Envoi du tableau modifié
 		}	
 		
         close(socketDialogue);

@@ -100,15 +100,14 @@ int main(int argc, char *argv[]){
 	
 	affichage(tab, sizeof(tab)); 
 
-	int choix;
+	int joueur, ordinateur;
 	while (1){
-		scanf("%i", &choix); 
+		scanf("%i", &joueur); 
 		printf("\n");
-		choix = choix - 1;
-		tab[choix] = 'X'; 
+		joueur = joueur - 1;
+		tab[joueur] = 'X'; 
 
-		// Envoi du message
-		switch(nb = send(descripteurSocket, tab, sizeof(tab),0)){
+		switch(nb = send(descripteurSocket, &joueur, sizeof(joueur),0)){
 			case -1 : /* une erreur ! */
 					perror("Erreur en écriture...");
 					close(descripteurSocket);
@@ -120,7 +119,8 @@ int main(int argc, char *argv[]){
 				printf("Envoyé! \n\n");
 		}
 
-		nb = recv(descripteurSocket, tab, sizeof(tab),0); 
+		nb = recv(descripteurSocket, &ordinateur, sizeof(ordinateur),0); 
+		tab[ordinateur] = 'O';
 
 		affichage(tab, sizeof(tab)); 
 	}
