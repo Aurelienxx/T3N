@@ -11,26 +11,6 @@
 
 #define LG_MESSAGE 256
 
-void lire_heure(char *heure) {
-    FILE *fpipe = popen("date '+%X'", "r");
-    if (fpipe == NULL) {
-        perror("popen");
-        exit(-1);
-    }
-    fgets(heure, LG_MESSAGE, fpipe);
-    pclose(fpipe);
-}
-
-void lire_date(char *date) {
-    FILE *fpipe = popen("date '+%A %d %B %Y'", "r");
-    if (fpipe == NULL) {
-        perror("popen");
-        exit(-1);
-    }
-    fgets(date, LG_MESSAGE, fpipe);
-    pclose(fpipe);
-}
-
 int main(int argc, char *argv[]){
 	int socketEcoute;
 
@@ -40,7 +20,8 @@ int main(int argc, char *argv[]){
 	int socketDialogue;
 	struct sockaddr_in pointDeRencontreDistant;
 	char messageRecu[LG_MESSAGE]; /* le message de la couche Application ! */
-	char messageEnvoye[500];
+	char messageEnvoye[LG_MESSAGE];
+	char tab[9];
 	int ecrits, lus; /* nb d’octets ecrits et lus */
 	int retour;
 
@@ -79,7 +60,7 @@ int main(int argc, char *argv[]){
 	
 	// boucle d’attente de connexion : en théorie, un serveur attend indéfiniment ! 
 	while(1){
-		memset(messageRecu, 'a', LG_MESSAGE*sizeof(char));
+		//memset(messageRecu, 'a', LG_MESSAGE*sizeof(char));
 		printf("Attente d’une demande de connexion (quitter avec Ctrl-C)\n\n");
 		
 		// c’est un appel bloquant
@@ -91,30 +72,32 @@ int main(int argc, char *argv[]){
    			exit(-4);
 		}
 		
+		char message[] = "start";
+		send(socketDialogue, message, strlen(message) + 1, 0);
+
 		// On réception les données du client (cf. protocole)
 		//lus = read(socketDialogue, messageRecu, LG_MESSAGE*sizeof(char)); // ici appel bloquant
-		lus = recv(socketDialogue, messageRecu, LG_MESSAGE*sizeof(char),0); // ici appel bloquant
-		switch(lus) {
-			case -1 : /* une erreur !*/
-				  perror("read"); 
-				  close(socketDialogue); 
-				  exit(-5);
-			case 0  : /* la socket est fermée*/
-				  fprintf(stderr, "La socket a été fermée par le client !\n\n");
-   				  close(socketDialogue);
-   				  return 0;
-			default:  /* réception de n octets */
-				//printf("Message reçu : %s (%d octets)\n\n", messageRecu, lus);
-				if (strncmp(messageRecu, "heure", 5) == 0) { // on verifie si on recu une demande pour l'heure
-					lire_heure(messageEnvoye);
-				} else if (strncmp(messageRecu, "date", 4) == 0) { // ou une demande pour la date
-					lire_date(messageEnvoye);
-				} else {
-					snprintf(messageEnvoye, 500, "Commande inconnue : %s", messageRecu); // sinon on envoie une erreur 
-				}
-		}
 
-        send(socketDialogue, messageEnvoye, strlen(messageEnvoye) + 1, 0);
+		while (1){
+			lus = recv(socketDialogue, tab, sizeof(tab), 0); // Attente de la réception des données
+			switch(lus) {
+				case -1: /* une erreur !*/
+						perror("recv");
+						close(socketDialogue);
+					exit(-5);
+				case 0: /* la socket est fermée*/
+						fprintf(stderr, "La socket a été fermée par le client !\n");
+						close(socketDialogue);
+					return 0;
+				default: /* réception de n octets */
+						int random = rand() % 9;  
+						tab[random] = 'O';
+					break;
+			}
+
+			send(socketDialogue, tab, sizeof(tab), 0);  // Envoi du tableau modifié
+		}	
+		
         close(socketDialogue);
 
 	}
