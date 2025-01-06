@@ -66,32 +66,25 @@ int main(int argc, char *argv[]){
 	}
 	printf("Connexion au serveur %s:%d réussie!\n",ip_dest,port_dest);
 
+	printf("Quel info on veut ? (heure/date) ");
+    scanf("%s", buffer); // on recupere l'info
+
  	// Envoi du message
 	//switch(nb = write(descripteurSocket, buffer, strlen(buffer))){
-	/*
 	switch(nb = send(descripteurSocket, buffer, strlen(buffer)+1,0)){
-		case -1 : /* une erreur ! 
+		case -1 : /* une erreur ! */
      			perror("Erreur en écriture...");
 		     	close(descripteurSocket);
 		     	exit(-3);
-		case 0 : /* le socket est fermée 
+		case 0 : /* le socket est fermée */
 			fprintf(stderr, "Le socket a été fermée par le serveur !\n\n");
 			return 0;
-		default: /* envoi de n octets 
+		default: /* envoi de n octets  */
 			printf("Message %s envoyé! (%d octets)\n\n", buffer, nb);
 	}
-	*/
 
-	printf("Que souhaitez-vous demander au serveur ? (heure/date) : ");
-    fgets(buffer, LG_MESSAGE, stdin);
-    buffer[strcspn(buffer, "\n")] = 0;
-
-    send(descripteurSocket, buffer, strlen(buffer) + 1, 0);
-
-    nb = recv(descripteurSocket, reponse, LG_MESSAGE, 0);
-    if (nb > 0) {
-        printf("Réponse du serveur : %s\n", reponse);
-    }
+    nb = recv(descripteurSocket, reponse, LG_MESSAGE, 0); // on recoit la reponse du serveur et on la lis 
+    printf("Réponse du serveur : %s\n", reponse);
 
 	// On ferme la ressource avant de quitter
 	close(descripteurSocket);

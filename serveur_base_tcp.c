@@ -93,33 +93,26 @@ int main(int argc, char *argv[]){
 		
 		// On réception les données du client (cf. protocole)
 		//lus = read(socketDialogue, messageRecu, LG_MESSAGE*sizeof(char)); // ici appel bloquant
-		/*
 		lus = recv(socketDialogue, messageRecu, LG_MESSAGE*sizeof(char),0); // ici appel bloquant
 		switch(lus) {
-			case -1 : /* une erreur ! 
+			case -1 : /* une erreur !*/
 				  perror("read"); 
 				  close(socketDialogue); 
 				  exit(-5);
-			case 0  : /* la socket est fermée 
+			case 0  : /* la socket est fermée*/
 				  fprintf(stderr, "La socket a été fermée par le client !\n\n");
    				  close(socketDialogue);
    				  return 0;
-			default:  /* réception de n octets 
-				  printf("Message reçu : %s (%d octets)\n\n", messageRecu, lus);
+			default:  /* réception de n octets */
+				//printf("Message reçu : %s (%d octets)\n\n", messageRecu, lus);
+				if (strncmp(messageRecu, "heure", 5) == 0) { // on verifie si on recu une demande pour l'heure
+					lire_heure(messageEnvoye);
+				} else if (strncmp(messageRecu, "date", 4) == 0) { // ou une demande pour la date
+					lire_date(messageEnvoye);
+				} else {
+					snprintf(messageEnvoye, 500, "Commande inconnue : %s", messageRecu); // sinon on envoie une erreur 
+				}
 		}
-		*/
-        if (recv(socketDialogue, messageRecu, LG_MESSAGE, 0) <= 0) {
-            close(socketDialogue);
-            continue;
-        }
-
-        if (strncmp(messageRecu, "heure", 5) == 0) {
-            lire_heure(messageEnvoye);
-        } else if (strncmp(messageRecu, "date", 4) == 0) {
-            lire_date(messageEnvoye);
-        } else {
-            snprintf(messageEnvoye, 500, "Commande inconnue : %s", messageRecu);
-        }
 
         send(socketDialogue, messageEnvoye, strlen(messageEnvoye) + 1, 0);
         close(socketDialogue);
