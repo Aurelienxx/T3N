@@ -27,7 +27,6 @@ int main(int argc, char *argv[]){
 	socklen_t longueurAdresse;
 
 	char buffer[LG_MESSAGE]; // buffer stockant le message
-	char reponse[LG_MESSAGE];
 	int nb; /* nb d’octets écrits et lus */
 
 	char ip_dest[16];
@@ -103,20 +102,21 @@ int main(int argc, char *argv[]){
 
 	int joueur, ordinateur;
 	while (1){
+		char vide = ' ';
 		bool verif = false;
 		do  {
 			scanf("%i", &joueur);
 			joueur = joueur - 1;
-			if(joueur < 1 | joueur > 9)  {
+			if((joueur < 1) | (joueur > 9))  {
 				printf("La position rentrée est incorrecte.");
 				verif = false;
 			}
 			else  {
-				if(!(strcmp(tab[joueur], ' ')))  {
+				if(!(strcmp(&tab[joueur], &vide)))  {
 				verif = false;
 				printf("La position rentrée est déjà occupée.");
 			}
-				else if ((strcmp(tab[joueur], ' ')))  {
+				else if ((strcmp(&tab[joueur], &vide)))  {
 					tab[joueur] = 'X';
 					verif = true;
 				}		

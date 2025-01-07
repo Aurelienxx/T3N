@@ -11,7 +11,7 @@
 
 #define LG_MESSAGE 256
 
-int main(int argc, char *argv[]){
+int main(){
 	int socketEcoute;
 
 	struct sockaddr_in pointDeRencontreLocal;
@@ -19,11 +19,8 @@ int main(int argc, char *argv[]){
 
 	int socketDialogue;
 	struct sockaddr_in pointDeRencontreDistant;
-	char messageRecu[LG_MESSAGE]; /* le message de la couche Application ! */
-	char messageEnvoye[LG_MESSAGE];
 	char tab[] = {' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' '};
-	int ecrits, lus; /* nb d’octets ecrits et lus */
-	int retour;
+	int lus; /* nb d’octets ecrits et lus */
 
 	// Crée un socket de communication
 	socketEcoute = socket(AF_INET, SOCK_STREAM, 0); 
