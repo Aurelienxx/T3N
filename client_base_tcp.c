@@ -149,6 +149,15 @@ int main(int argc, char *argv[]){
 		printf("%s\n", reponse);
 	}
 	while(strcmp(reponse, "continue") == 0);
+	if(strcmp(reponse, "Xwins") == 0)  {
+		printf("Le client a gagné la partie !\n");
+	}
+	else if ((strcmp(reponse, "Xends") == 0) | (strcmp(reponse, "Oends") == 0))  {
+		printf("Égalité. Personne n'a gagné, tout le monde a perdu.\n");
+	}
+	else if (strcmp(reponse, "Owins") == 0)  {
+		printf("L'ordinateur a gagné la partie !\n");
+	}
  	
 	// On ferme la ressource avant de quitter
 	close(descripteurSocket);
