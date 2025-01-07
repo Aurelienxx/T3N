@@ -1,4 +1,5 @@
 #include <stdio.h>
+#include <stdbool.h> 
 #include <stdlib.h> /* pour exit */
 #include <unistd.h> /* pour read, write, close, sleep */
 #include <sys/types.h>
@@ -102,10 +103,27 @@ int main(int argc, char *argv[]){
 
 	int joueur, ordinateur;
 	while (1){
-		scanf("%i", &joueur); 
-		printf("\n");
-		joueur = joueur - 1;
-		tab[joueur] = 'X'; 
+		bool verif = false;
+		do  {
+			scanf("%i", &joueur);
+			joueur = joueur - 1;
+			if(joueur < 1 | joueur > 9)  {
+				printf("La position rentrée est incorrecte.");
+				verif = false;
+			}
+			else  {
+				if(!(strcmp(tab[joueur], ' ')))  {
+				verif = false;
+				printf("La position rentrée est déjà occupée.");
+			}
+				else if ((strcmp(tab[joueur], ' ')))  {
+					tab[joueur] = 'X';
+					verif = true;
+				}		
+			}
+		}
+		while (verif == false);
+		printf("\n"); 
 
 		switch(nb = send(descripteurSocket, &joueur, sizeof(joueur),0)){
 			case -1 : /* une erreur ! */
