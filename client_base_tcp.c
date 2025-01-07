@@ -104,29 +104,12 @@ int main(int argc, char *argv[]){
 
 	int joueur, ordinateur;
 	do  {
-		char vide = ' ';
 		bool verif = false;
 		do  {
 			printf("Veuillez rentrer la position dans laquelle vous voulez jouer : ");
 			scanf("%i", &joueur);
-			joueur = joueur - 1;
-			if((joueur < 0) | (joueur > 8))  {
-				printf("La position rentrée est incorrecte.");
-				verif = false;
-			}
-			else  {
-
-				if(tab[joueur] != vide)  {
-				verif = false;
-				printf("La position rentrée est déjà occupée.");
-			}
-				else if (tab[joueur] == vide)  {
-					tab[joueur] = 'X';
-					verif = true;
-				}		
-			}
 		}
-		while (verif == false);
+		while (check_position == 0);
 		affichage(tab, sizeof(tab)); 
 		printf("\n"); 
 
@@ -156,10 +139,34 @@ int main(int argc, char *argv[]){
 		printf("Égalité. Personne n'a gagné, tout le monde a perdu.\n");
 	}
 	else if (strcmp(reponse, "Owins") == 0)  {
-		printf("L'ordinateur a gagné la partie !\n");
+		printf("Le client  a gagné la partie !\n");
 	}
  	
 	// On ferme la ressource avant de quitter
 	close(descripteurSocket);
 	return 0;
+}
+
+int check_position(int position, plateau char[], int joueur)  {
+	position = position - 1;
+	if((position < 0) | (position > 8))  {
+		printf("La position rentrée est incorrecte.");
+		return 0;
+	}
+	else  {
+		if(tab[position] != ' ')  {
+			printf("La position rentrée est déjà occupée.");
+			return 0;
+		}
+		else if (tab[position] == ' ')  {
+			if(joueur == 1)  {
+				tab[position] = 'X';
+				return 1;
+			}
+			else  {
+				tab[position] = 'O';
+				return 1;
+			}
+		}		
+	}
 }
