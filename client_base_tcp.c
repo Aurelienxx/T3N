@@ -9,12 +9,23 @@
 
 #define LG_MESSAGE 256
 
+void affichage(char tableau[], int taille){
+    for (int i = 0; i < taille; i++) {
+        printf("| %c ", tableau[i]); 
+        if ((i + 1) % 3 == 0) {  
+            printf("|\n");  
+            printf("-------------------\n");  
+        }
+    }
+    printf("\n");
+}
+
 int main(int argc, char *argv[]){
 	int descripteurSocket;
 	struct sockaddr_in sockaddrDistant;
 	socklen_t longueurAdresse;
 
-	char buffer[256]; // buffer stockant le message
+	char buffer[LG_MESSAGE]; // buffer stockant le message
 	char reponse[LG_MESSAGE];
 	int nb; /* nb d’octets écrits et lus */
 
@@ -66,25 +77,54 @@ int main(int argc, char *argv[]){
 	}
 	printf("Connexion au serveur %s:%d réussie!\n",ip_dest,port_dest);
 
-	printf("Quel info on veut ? (heure/date) ");
-    scanf("%s", buffer); // on recupere l'info
+	switch (nb = recv(descripteurSocket, buffer, LG_MESSAGE, 0)){
+		case -1:
+				perror("Erreur de réception");
+				close(descripteurSocket);
+				exit(-3);
+			break;
 
- 	// Envoi du message
-	//switch(nb = write(descripteurSocket, buffer, strlen(buffer))){
-	switch(nb = send(descripteurSocket, buffer, strlen(buffer)+1,0)){
-		case -1 : /* une erreur ! */
-     			perror("Erreur en écriture...");
-		     	close(descripteurSocket);
-		     	exit(-3);
-		case 0 : /* le socket est fermée */
-			fprintf(stderr, "Le socket a été fermée par le serveur !\n\n");
-			return 0;
-		default: /* envoi de n octets  */
-			printf("Message %s envoyé! (%d octets)\n\n", buffer, nb);
+		case 0:
+				fprintf(stderr, "Le socket a été fermée par le serveur !\n\n");
+				return 0;
+			break;
+		
+		default:
+				if (strcmp(buffer, "start") == 0) {
+					printf("Message start recu \n");
+				} 
+			break;
 	}
 
-    nb = recv(descripteurSocket, reponse, LG_MESSAGE, 0); // on recoit la reponse du serveur et on la lis 
-    printf("Réponse du serveur : %s\n", reponse);
+	char tab[] = {' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' '};
+	
+	affichage(tab, sizeof(tab)); 
+
+	int joueur, ordinateur;
+	while (1){
+		scanf("%i", &joueur); 
+		printf("\n");
+		joueur = joueur - 1;
+		tab[joueur] = 'X'; 
+
+		switch(nb = send(descripteurSocket, &joueur, sizeof(joueur),0)){
+			case -1 : /* une erreur ! */
+					perror("Erreur en écriture...");
+					close(descripteurSocket);
+					exit(-3);
+			case 0 : /* le socket est fermée */
+				fprintf(stderr, "Le socket a été fermée par le serveur !\n\n");
+				return 0;
+			default: /* envoi de n octets  */
+				printf("Envoyé! \n\n");
+		}
+
+		nb = recv(descripteurSocket, &ordinateur, sizeof(ordinateur),0); 
+		tab[ordinateur] = 'O';
+
+		affichage(tab, sizeof(tab)); 
+	}
+ 	
 
 	// On ferme la ressource avant de quitter
 	close(descripteurSocket);
