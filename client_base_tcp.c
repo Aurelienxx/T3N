@@ -1,4 +1,5 @@
 #include <stdio.h>
+#include <stdbool.h> 
 #include <stdlib.h> /* pour exit */
 #include <unistd.h> /* pour read, write, close, sleep */
 #include <sys/types.h>
@@ -14,10 +15,33 @@ void affichage(char tableau[], int taille){
         printf("| %c ", tableau[i]); 
         if ((i + 1) % 3 == 0) {  
             printf("|\n");  
-            printf("-------------\n");  
+            printf("|---|---|---|\n");  
         }
     }
-    printf("\n");
+    printf("\n\n");
+}
+
+int check_position(int position, char plateau[], int joueur)  {
+    if((position < 0) | (position > 8))  {
+        printf("La position rentrée est incorrecte.");
+        return 0;
+    }
+    else  {
+        if(plateau[position] != ' ')  {
+            printf("La position rentrée est déjà occupée.");
+            return 0;
+        }
+        else if (plateau[position] == ' ')  {
+            if(joueur == 1)  {
+                plateau[position] = 'X';
+                return 1;
+            }
+            else  {
+                plateau[position] = 'O';
+                return 1;
+            }
+        }        
+    }
 }
 
 int main(int argc, char *argv[]){
@@ -28,6 +52,8 @@ int main(int argc, char *argv[]){
 	char buffer[LG_MESSAGE]; // buffer stockant le message
 	char reponse[LG_MESSAGE];
 	int nb; /* nb d’octets écrits et lus */
+
+	char tab[] = {' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' '};
 
 	char ip_dest[16];
 	int  port_dest;
@@ -77,6 +103,7 @@ int main(int argc, char *argv[]){
 	}
 	printf("Connexion au serveur %s:%d réussie!\n",ip_dest,port_dest);
 
+	int joueur, ordinateur, etat;
 	switch (nb = recv(descripteurSocket, buffer, LG_MESSAGE, 0)){
 		case -1:
 				perror("Erreur de réception");
@@ -90,44 +117,83 @@ int main(int argc, char *argv[]){
 			break;
 		
 		default:
-				if (strcmp(buffer, "start") == 0) {
-					printf("Message start recu \n");
-				} 
+				if (strcmp(buffer, "startPlayer1") == 0) {					 
+					printf("Message start player 1 recu \n");
+
+					do  {
+						affichage(tab, sizeof(tab));
+						
+						char vide = ' ';
+						do  {
+							printf("Veuillez rentrer la position dans laquelle vous voulez jouer : ");
+							scanf("%i", &joueur);
+							joueur = joueur - 1;
+
+						} while (check_position(joueur, tab, 1) == 0);
+						
+						affichage(tab, sizeof(tab)); 
+						
+						switch(nb = send(descripteurSocket, &joueur, sizeof(joueur),0)){
+							case -1 : /* une erreur ! */
+									perror("Erreur en écriture...");
+									close(descripteurSocket);
+									exit(-3);
+							case 0 : /* le socket est fermée */
+								fprintf(stderr, "Le socket a été fermée par le serveur !\n\n");
+								return 0;
+							default: /* envoi de n octets  */
+								//printf("Envoyé! \n\n");
+						}
+						nb = recv(descripteurSocket, &ordinateur, sizeof(ordinateur),0);
+						tab[ordinateur] = 'O';
+
+						etat = recv(descripteurSocket, &reponse, LG_MESSAGE, 0);
+						printf("%s\n", reponse);
+					}
+					while(strcmp(reponse, "continue") == 0);
+
+				}  else {
+					
+					printf("Message start player 2 recu \n");
+
+					do  {
+						char vide = ' ';
+
+						nb = recv(descripteurSocket, &ordinateur, sizeof(ordinateur),0);
+						tab[ordinateur] = 'X';
+						
+						affichage(tab, sizeof(tab));
+
+						 
+
+						do  {
+							printf("Veuillez rentrer la position dans laquelle vous voulez jouer : ");
+							scanf("%i", &joueur);
+							joueur = joueur - 1;
+						} while (check_position(joueur, tab, 0) == 0);
+
+						affichage(tab, sizeof(tab)); 
+
+						switch(nb = send(descripteurSocket, &joueur, sizeof(joueur),0)){
+							case -1 : /* une erreur ! */
+									perror("Erreur en écriture...");
+									close(descripteurSocket);
+									exit(-3);
+							case 0 : /* le socket est fermée */
+								fprintf(stderr, "Le socket a été fermée par le serveur !\n\n");
+								return 0;
+							default: /* envoi de n octets  */
+								printf("Envoyé! \n\n");
+						}
+
+						etat = recv(descripteurSocket, &reponse, LG_MESSAGE, 0);
+						printf("%s\n", reponse);
+					}
+					while(strcmp(reponse, "continue") == 0);
+
+				}
 			break;
 	}
-
-	char tab[] = {' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' '};
-	
-	affichage(tab, sizeof(tab)); 
-
-	int joueur, ordinateur;
-	while (1){
-		scanf("%i", &joueur); 
-		printf("\n");
-		joueur = joueur - 1;
-		tab[joueur] = 'X'; 
-
-		switch(nb = send(descripteurSocket, &joueur, sizeof(joueur),0)){
-			case -1 : /* une erreur ! */
-					perror("Erreur en écriture...");
-					close(descripteurSocket);
-					exit(-3);
-			case 0 : /* le socket est fermée */
-				fprintf(stderr, "Le socket a été fermée par le serveur !\n\n");
-				return 0;
-			default: /* envoi de n octets  */
-				printf("Envoyé! \n\n");
-		}
-
-		nb = recv(descripteurSocket, &ordinateur, sizeof(ordinateur),0); 
-		tab[ordinateur] = 'O';
-
-		affichage(tab, sizeof(tab)); 
-
-		nb = recv(descripteurSocket, reponse, LG_MESSAGE, 0);
-		printf("message : %s recu \n",reponse);
-	}
- 	
 
 	// On ferme la ressource avant de quitter
 	close(descripteurSocket);

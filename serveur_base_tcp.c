@@ -31,7 +31,7 @@ void position_alea(char grille[9], int *pos_x) {
 
 /* Compte le nombre d'espace vide contenu dans le tableau */
 int check_empty(char grille[9]){
-	int nb_vide ;
+	int nb_vide = 0;
 
 	for ( int i = 0; i < 9; i++){
 		if (grille[i] == ' '){
@@ -74,6 +74,8 @@ int main(int argc, char *argv[]){
 	socklen_t longueurAdresse;
 
 	int socketDialogue;
+	int joueur1,joueur2;
+	int indiceJoueur1, indiceJoueur2;
 	struct sockaddr_in pointDeRencontreDistant;
 	char messageRecu[LG_MESSAGE]; /* le message de la couche Application ! */
 	char messageEnvoye[LG_MESSAGE];
@@ -115,12 +117,94 @@ int main(int argc, char *argv[]){
    		exit(-3);
 	}
 	printf("Socket placée en écoute passive ...\n");
-	
-	// boucle d’attente de connexion : en théorie, un serveur attend indéfiniment ! 
-	while(1){
-		//memset(messageRecu, 'a', LG_MESSAGE*sizeof(char));
+
+	while (1){
+
 		printf("Attente d’une demande de connexion (quitter avec Ctrl-C)\n\n");
+
+		printf("Attente des connexions des joueurs ...\n");
+		joueur1 = accept(socketEcoute, (struct sockaddr *)&pointDeRencontreDistant, &longueurAdresse);
+		if (joueur1 < 0) {
+			perror("accept joueur1");
+			exit(-4);
+		}
+		printf("Joueur 1 connecté.\n");
+
+		joueur2 = accept(socketEcoute, (struct sockaddr *)&pointDeRencontreDistant, &longueurAdresse);
+		if (joueur2 < 0) {
+			perror("accept joueur2");
+			exit(-5);
+		}
+		printf("Joueur 2 connecté.\n");
+
+		send(joueur1, "startPlayer1", strlen("startPlayer1") + 1, 0);
+		send(joueur2, "startplayer2", strlen("startplayer2") + 1, 0);
 		
+		// boucle d’attente de connexion : en théorie, un serveur attend indéfiniment ! 
+		while(1){
+			lus = recv(joueur1, &indiceJoueur1, sizeof(indiceJoueur1), 0);
+			
+			tab[indiceJoueur1] = 'X';
+
+			send(joueur2, &indiceJoueur1, sizeof(indiceJoueur1), 0);  // Envoi de la position choisi 
+
+
+			lus = recv(joueur2, &indiceJoueur2, sizeof(indiceJoueur2), 0);
+
+			tab[indiceJoueur2] = 'O';
+
+			send(joueur1, &indiceJoueur2, sizeof(indiceJoueur2), 0);  // Envoi de la position choisi 
+
+			//char envoie[] = "continue";
+			//strncpy(messageEnvoye,"continue", LG_MESSAGE - 1);
+			//send(joueur1, envoie, strlen(envoie) + 1, 0);  // Envoi de l'état de la grille
+			//send(joueur2, envoie, strlen(envoie) + 1, 0);  // Envoi de l'état de la grille
+
+			switch(lus) {
+				case -1: // une erreur !
+						perror("recv");
+						close(socketDialogue);
+					exit(-5);
+				case 0: // la socket est fermée
+						fprintf(stderr, "La socket a été fermée par le client !\n");
+						close(socketDialogue);
+					return 0;
+				default: // recuperation de la position 
+						// Verifie une victoire de 'X'
+						if ( check_victory(tab,'X') ){
+							strncpy(messageEnvoye,"Xwins", LG_MESSAGE - 1);
+						} else {
+							// verification si la grille est vide ou non 
+							if (check_empty(tab) == 0){
+								strncpy(messageEnvoye,"Xends", LG_MESSAGE - 1);
+							} else {
+
+								// verification victoire de O
+								if ( check_victory(tab,'O') ){
+									strncpy(messageEnvoye,"Owins", LG_MESSAGE - 1);
+								} else {
+									if ( check_empty(tab) == 0){
+										strncpy(messageEnvoye,"Oends", LG_MESSAGE - 1);
+									} else {
+										strncpy(messageEnvoye,"continue", LG_MESSAGE - 1);
+									}
+								}
+							}
+						}
+
+					break;
+
+			}
+				
+			send(joueur1, messageEnvoye, strlen(messageEnvoye) + 1, 0);  // Envoi de l'état de la grille
+			send(joueur2, messageEnvoye, strlen(messageEnvoye) + 1, 0);  // Envoi de l'état de la grille
+
+		}
+
+		close(joueur1);
+		close(joueur2);
+
+		/*
 		// c’est un appel bloquant
 		socketDialogue = accept(socketEcoute, (struct sockaddr *)&pointDeRencontreDistant, &longueurAdresse);
 		if (socketDialogue < 0) {
@@ -141,15 +225,15 @@ int main(int argc, char *argv[]){
 			lus = recv(socketDialogue, &joueur, sizeof(joueur), 0); // Attente de la réception des données
 			
 			switch(lus) {
-				case -1: /* une erreur !*/
+				case -1: // une erreur !
 						perror("recv");
 						close(socketDialogue);
 					exit(-5);
-				case 0: /* la socket est fermée*/
+				case 0: // la socket est fermée
 						fprintf(stderr, "La socket a été fermée par le client !\n");
 						close(socketDialogue);
 					return 0;
-				default: /* recuperation de la position */
+				default: // recuperation de la position 
 						tab[joueur] = 'X';
 
 						// Verifie une victoire de 'X'
@@ -186,8 +270,11 @@ int main(int argc, char *argv[]){
 		}	
 		
         close(socketDialogue);
+		*/
 
 	}
+	
+
 	// On ferme la ressource avant de quitter
    	close(socketEcoute);
 	return 0; 
