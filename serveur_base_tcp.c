@@ -6,12 +6,68 @@
 #include <string.h> /* pour memset */
 #include <netinet/in.h> /* pour struct sockaddr_in */
 #include <arpa/inet.h> /* pour htons et inet_aton */
+#include <time.h>
 
 #define PORT 5000 //(ports >= 5000 réservés pour usage explicite)
 
 #define LG_MESSAGE 256
 
-int main(){
+/* Choisi une position aléatoirement */
+void position_alea(char grille[9], int *pos_x) {
+    int vide[9];
+    int nb_vide = 0;
+
+    for (int i = 0; i < 9; i++) {
+        if (grille[i] == ' ') {
+            vide[nb_vide] = i;
+            nb_vide++;
+        }
+    }
+
+    int choix = (rand() % nb_vide);
+
+    *pos_x = vide[choix];
+}
+
+/* Compte le nombre d'espace vide contenu dans le tableau */
+int check_empty(char grille[9]){
+	int nb_vide ;
+
+	for ( int i = 0; i < 9; i++){
+		if (grille[i] == ' '){
+			nb_vide = nb_vide + 1;
+		}
+	}
+
+	return nb_vide;
+}
+
+/* Verifie une victoire */
+int check_victory(char tab[9], char symbol) {
+
+    for (int i = 0; i < 9; i = i + 3) {
+        if (tab[i] == symbol && tab[i + 1] == symbol && tab[i + 2] == symbol) {
+            return 1; 
+        }
+    }
+
+    for (int i = 0; i < 3; i++) {
+        if (tab[i] == symbol && tab[i + 3] == symbol && tab[i + 6] == symbol) {
+            return 1;
+        }
+    }
+
+    if (tab[0] == symbol && tab[4] == symbol && tab[8] == symbol) {
+        return 1; 
+    }
+    if (tab[2] == symbol && tab[4] == symbol && tab[6] == symbol) {
+        return 1; 
+    }
+
+    return 0; 
+}
+
+int main(int argc, char *argv[]){
 	int socketEcoute;
 
 	struct sockaddr_in pointDeRencontreLocal;
@@ -19,8 +75,13 @@ int main(){
 
 	int socketDialogue;
 	struct sockaddr_in pointDeRencontreDistant;
+	char messageRecu[LG_MESSAGE]; /* le message de la couche Application ! */
+	char messageEnvoye[LG_MESSAGE];
 	char tab[] = {' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' '};
-	int lus; /* nb d’octets ecrits et lus */
+	int ecrits, lus; /* nb d’octets ecrits et lus */
+	int retour;
+
+	srand(time(NULL));
 
 	// Crée un socket de communication
 	socketEcoute = socket(AF_INET, SOCK_STREAM, 0); 
@@ -78,7 +139,7 @@ int main(){
 		int joueur,ordinateur ;
 		while (1){
 			lus = recv(socketDialogue, &joueur, sizeof(joueur), 0); // Attente de la réception des données
-			tab[joueur] = 'X';
+			
 			switch(lus) {
 				case -1: /* une erreur !*/
 						perror("recv");
@@ -88,13 +149,40 @@ int main(){
 						fprintf(stderr, "La socket a été fermée par le client !\n");
 						close(socketDialogue);
 					return 0;
-				default: /* réception de n octets */
-						ordinateur = rand() % 9;  
-						tab[ordinateur] = 'O';
-					break;
-			}
+				default: /* recuperation de la position */
+						tab[joueur] = 'X';
 
-			send(socketDialogue, &ordinateur, sizeof(ordinateur), 0);  // Envoi du tableau modifié
+						// Verifie une victoire de 'X'
+						if ( check_victory(tab,'X') ){
+							strncpy(messageEnvoye,"Xwins", LG_MESSAGE - 1);
+						} else {
+							// verification si la grille est vide ou non 
+							if (check_empty(tab) == 0){
+								strncpy(messageEnvoye,"Xends", LG_MESSAGE - 1);
+							} else {
+								position_alea(tab, &ordinateur);
+								tab[ordinateur] = 'O';
+
+								// verification victoire de O
+								if ( check_victory(tab,'O') ){
+									strncpy(messageEnvoye,"Owins", LG_MESSAGE - 1);
+								} else {
+									if ( check_empty(tab) == 0){
+										strncpy(messageEnvoye,"Oends", LG_MESSAGE - 1);
+									} else {
+										strncpy(messageEnvoye,"continue", LG_MESSAGE - 1);
+									}
+								}
+							}
+						}
+
+					break;
+
+			}
+			
+			send(socketDialogue, &ordinateur, sizeof(ordinateur), 0);  // Envoi de la position choisi 
+			send(socketDialogue, messageEnvoye, strlen(messageEnvoye) + 1, 0);  // Envoi de l'état de la grille
+			
 		}	
 		
         close(socketDialogue);

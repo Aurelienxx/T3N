@@ -27,7 +27,9 @@ int main(int argc, char *argv[]){
 	socklen_t longueurAdresse;
 
 	char buffer[LG_MESSAGE]; // buffer stockant le message
+	char reponse[LG_MESSAGE];
 	int nb; /* nb d’octets écrits et lus */
+	int etat; /* état de la partie */
 
 	char ip_dest[16];
 	int  port_dest;
@@ -101,21 +103,18 @@ int main(int argc, char *argv[]){
 	affichage(tab, sizeof(tab)); 
 
 	int joueur, ordinateur;
-	while (1){
+	do  {
 		char vide = ' ';
 		bool verif = false;
 		do  {
 			printf("Veuillez rentrer la position dans laquelle vous voulez jouer : ");
 			scanf("%i", &joueur);
 			joueur = joueur - 1;
-			printf("%i\n", joueur);
-			printf("%c", tab[joueur]);
 			if((joueur < 0) | (joueur > 8))  {
 				printf("La position rentrée est incorrecte.");
 				verif = false;
 			}
 			else  {
-				printf("%c", tab[joueur]);
 
 				if(tab[joueur] != vide)  {
 				verif = false;
@@ -142,16 +141,16 @@ int main(int argc, char *argv[]){
 			default: /* envoi de n octets  */
 				printf("Envoyé! \n\n");
 		}
-
-		nb = recv(descripteurSocket, &ordinateur, sizeof(ordinateur),0); 
+		nb = recv(descripteurSocket, &ordinateur, sizeof(ordinateur),0);
 		tab[ordinateur] = 'O';
 
-		affichage(tab, sizeof(tab)); 
+		affichage(tab, sizeof(tab));
+		etat = recv(descripteurSocket, &reponse, LG_MESSAGE, 0);
+		printf("%s\n", reponse);
 	}
+	while(strcmp(reponse, "continue") == 0);
  	
-
 	// On ferme la ressource avant de quitter
 	close(descripteurSocket);
-
 	return 0;
 }
