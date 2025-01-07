@@ -15,7 +15,7 @@ void affichage(char tableau[], int taille){
         printf("| %c ", tableau[i]); 
         if ((i + 1) % 3 == 0) {  
             printf("|\n");  
-            printf("-------------------\n");  
+            printf("|---|---|---|\n");  
         }
     }
     printf("\n");
@@ -105,24 +105,30 @@ int main(int argc, char *argv[]){
 		char vide = ' ';
 		bool verif = false;
 		do  {
+			printf("Veuillez rentrer la position dans laquelle vous voulez jouer : ");
 			scanf("%i", &joueur);
 			joueur = joueur - 1;
-			if((joueur < 1) | (joueur > 9))  {
+			printf("%i\n", joueur);
+			printf("%c", tab[joueur]);
+			if((joueur < 0) | (joueur > 8))  {
 				printf("La position rentrée est incorrecte.");
 				verif = false;
 			}
 			else  {
-				if(!(strcmp(&tab[joueur], &vide)))  {
+				printf("%c", tab[joueur]);
+
+				if(tab[joueur] != vide)  {
 				verif = false;
 				printf("La position rentrée est déjà occupée.");
 			}
-				else if ((strcmp(&tab[joueur], &vide)))  {
+				else if (tab[joueur] == vide)  {
 					tab[joueur] = 'X';
 					verif = true;
 				}		
 			}
 		}
 		while (verif == false);
+		affichage(tab, sizeof(tab)); 
 		printf("\n"); 
 
 		switch(nb = send(descripteurSocket, &joueur, sizeof(joueur),0)){
