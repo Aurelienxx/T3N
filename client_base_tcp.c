@@ -21,6 +21,30 @@ void affichage(char tableau[], int taille){
     printf("\n");
 }
 
+int check_position(int position, char plateau[], int joueur)  {
+	position = position - 1;
+	if((position < 0) | (position > 8))  {
+		printf("La position rentrée est incorrecte.");
+		return 0;
+	}
+	else  {
+		if(plateau[position] != ' ')  {
+			printf("La position rentrée est déjà occupée.");
+			return 0;
+		}
+		else if (plateau[position] == ' ')  {
+			if(joueur == 1)  {
+				plateau[position] = 'X';
+				return 1;
+			}
+			else  {
+				plateau[position] = 'O';
+				return 1;
+			}
+		}		
+	}
+}
+
 int main(int argc, char *argv[]){
 	int descripteurSocket;
 	struct sockaddr_in sockaddrDistant;
@@ -145,28 +169,4 @@ int main(int argc, char *argv[]){
 	// On ferme la ressource avant de quitter
 	close(descripteurSocket);
 	return 0;
-}
-
-int check_position(int position, plateau char[], int joueur)  {
-	position = position - 1;
-	if((position < 0) | (position > 8))  {
-		printf("La position rentrée est incorrecte.");
-		return 0;
-	}
-	else  {
-		if(tab[position] != ' ')  {
-			printf("La position rentrée est déjà occupée.");
-			return 0;
-		}
-		else if (tab[position] == ' ')  {
-			if(joueur == 1)  {
-				tab[position] = 'X';
-				return 1;
-			}
-			else  {
-				tab[position] = 'O';
-				return 1;
-			}
-		}		
-	}
 }
