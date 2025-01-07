@@ -31,14 +31,13 @@ void position_alea(char grille[9], int *pos_x) {
 
 /* Compte le nombre d'espace vide contenu dans le tableau */
 int check_empty(char grille[9]){
-	int nb_vide ;
+	int nb_vide = 0;
 
 	for ( int i = 0; i < 9; i++){
 		if (grille[i] == ' '){
 			nb_vide = nb_vide + 1;
 		}
 	}
-
 	return nb_vide;
 }
 
@@ -177,16 +176,11 @@ int main(int argc, char *argv[]){
 						}
 
 					break;
-
 			}
-			
 			send(socketDialogue, &ordinateur, sizeof(ordinateur), 0);  // Envoi de la position choisi 
 			send(socketDialogue, messageEnvoye, strlen(messageEnvoye) + 1, 0);  // Envoi de l'état de la grille
-			
 		}	
-		
         close(socketDialogue);
-
 	}
 	// On ferme la ressource avant de quitter
    	close(socketEcoute);

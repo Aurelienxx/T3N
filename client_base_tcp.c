@@ -22,7 +22,6 @@ void affichage(char tableau[], int taille){
 }
 
 int check_position(int position, char plateau[], int joueur)  {
-	position = position - 1;
 	if((position < 0) | (position > 8))  {
 		printf("La position rentrée est incorrecte.");
 		return 0;
@@ -132,11 +131,13 @@ int main(int argc, char *argv[]){
 		do  {
 			printf("Veuillez rentrer la position dans laquelle vous voulez jouer : ");
 			scanf("%i", &joueur);
+			joueur = joueur -1;
 		}
-		while (check_position == 0);
+		while (check_position(joueur, tab, 1) == 0);
 		affichage(tab, sizeof(tab)); 
 		printf("\n"); 
 
+		printf("%d", joueur);
 		switch(nb = send(descripteurSocket, &joueur, sizeof(joueur),0)){
 			case -1 : /* une erreur ! */
 					perror("Erreur en écriture...");
@@ -157,13 +158,13 @@ int main(int argc, char *argv[]){
 	}
 	while(strcmp(reponse, "continue") == 0);
 	if(strcmp(reponse, "Xwins") == 0)  {
-		printf("Le client a gagné la partie !\n");
+		printf("Le client n°1 a gagné la partie !\n");
 	}
 	else if ((strcmp(reponse, "Xends") == 0) | (strcmp(reponse, "Oends") == 0))  {
 		printf("Égalité. Personne n'a gagné, tout le monde a perdu.\n");
 	}
 	else if (strcmp(reponse, "Owins") == 0)  {
-		printf("Le client  a gagné la partie !\n");
+		printf("Le client n°2 a gagné la partie !\n");
 	}
  	
 	// On ferme la ressource avant de quitter
