@@ -14,7 +14,7 @@ void affichage(char tableau[], int taille){
         printf("| %c ", tableau[i]); 
         if ((i + 1) % 3 == 0) {  
             printf("|\n");  
-            printf("-------------------\n");  
+            printf("-------------\n");  
         }
     }
     printf("\n");
@@ -123,6 +123,9 @@ int main(int argc, char *argv[]){
 		tab[ordinateur] = 'O';
 
 		affichage(tab, sizeof(tab)); 
+
+		nb = recv(descripteurSocket, reponse, LG_MESSAGE, 0);
+		printf("message : %s recu \n",reponse);
 	}
  	
 
