@@ -44,6 +44,14 @@ int check_position(int position, char plateau[], int joueur)  {
     }
 }
 
+void input_verificator(char tab[9], int *position, int joueur) {
+    do {
+        printf("Veuillez rentrer la position dans laquelle vous voulez jouer (1-9) : ");
+        scanf("%i", position);
+        (*position)--;
+    } while (check_position(*position, tab, joueur) == 0); 
+}
+
 int main(int argc, char *argv[]){
 	int descripteurSocket;
 	struct sockaddr_in sockaddrDistant;
@@ -123,27 +131,12 @@ int main(int argc, char *argv[]){
 					do  {
 						affichage(tab, sizeof(tab));
 						
-						char vide = ' ';
-						do  {
-							printf("Veuillez rentrer la position dans laquelle vous voulez jouer : ");
-							scanf("%i", &joueur);
-							joueur = joueur - 1;
-
-						} while (check_position(joueur, tab, 1) == 0);
+						input_verificator(tab,&joueur,1);
 						
 						affichage(tab, sizeof(tab)); 
 						
-						switch(nb = send(descripteurSocket, &joueur, sizeof(joueur),0)){
-							case -1 : /* une erreur ! */
-									perror("Erreur en écriture...");
-									close(descripteurSocket);
-									exit(-3);
-							case 0 : /* le socket est fermée */
-								fprintf(stderr, "Le socket a été fermée par le serveur !\n\n");
-								return 0;
-							default: /* envoi de n octets  */
-								//printf("Envoyé! \n\n");
-						}
+						send(descripteurSocket, &joueur, sizeof(joueur),0);
+
 						nb = recv(descripteurSocket, &ordinateur, sizeof(ordinateur),0);
 						tab[ordinateur] = 'O';
 
@@ -157,36 +150,22 @@ int main(int argc, char *argv[]){
 					printf("Message start player 2 recu \n");
 
 					do  {
-						char vide = ' ';
-
 						nb = recv(descripteurSocket, &ordinateur, sizeof(ordinateur),0);
 						tab[ordinateur] = 'X';
 						
 						affichage(tab, sizeof(tab));
 
-						 
-
-						do  {
-							printf("Veuillez rentrer la position dans laquelle vous voulez jouer : ");
-							scanf("%i", &joueur);
-							joueur = joueur - 1;
-						} while (check_position(joueur, tab, 0) == 0);
-
-						affichage(tab, sizeof(tab)); 
-
-						switch(nb = send(descripteurSocket, &joueur, sizeof(joueur),0)){
-							case -1 : /* une erreur ! */
-									perror("Erreur en écriture...");
-									close(descripteurSocket);
-									exit(-3);
-							case 0 : /* le socket est fermée */
-								fprintf(stderr, "Le socket a été fermée par le serveur !\n\n");
-								return 0;
-							default: /* envoi de n octets  */
-								printf("Envoyé! \n\n");
-						}
-
 						etat = recv(descripteurSocket, &reponse, LG_MESSAGE, 0);
+
+						if (strcmp(reponse, "continue") == 0){
+							input_verificator(tab,&joueur,0);
+
+							send(descripteurSocket, &joueur, sizeof(joueur),0);
+
+							affichage(tab, sizeof(tab)); 
+						}				
+
+						
 						printf("%s\n", reponse);
 					}
 					while(strcmp(reponse, "continue") == 0);
@@ -200,3 +179,18 @@ int main(int argc, char *argv[]){
 
 	return 0;
 }
+
+
+/*
+switch(nb = send(descripteurSocket, &joueur, sizeof(joueur),0)){
+	case -1 : // une erreur ! 
+			perror("Erreur en écriture...");
+			close(descripteurSocket);
+			exit(-3);
+	case 0 : // le socket est fermée 
+		fprintf(stderr, "Le socket a été fermée par le serveur !\n\n");
+		return 0;
+	default: // envoi de n octets  
+		printf("Envoyé! \n\n");
+}
+*/

@@ -67,6 +67,21 @@ int check_victory(char tab[9], char symbol) {
     return 0; 
 }
 
+/* Verfication victoire */
+void verifier_etat_jeu(char tab[9], char *messageEnvoye, char joueur_actuel, char autre_joueur) {
+    if (check_victory(tab, joueur_actuel)) {
+        snprintf(messageEnvoye, LG_MESSAGE, "%cwins", joueur_actuel); 
+    } else if (check_empty(tab) == 0) {
+        snprintf(messageEnvoye, LG_MESSAGE, "%cends", joueur_actuel); 
+    } else if (check_victory(tab, autre_joueur)) {
+        snprintf(messageEnvoye, LG_MESSAGE, "%cwins", autre_joueur); 
+    } else if (check_empty(tab) == 0) {
+        snprintf(messageEnvoye, LG_MESSAGE, "%cends", autre_joueur); 
+    } else {
+        strncpy(messageEnvoye, "continue", LG_MESSAGE - 1); 
+    }
+}
+
 int main(int argc, char *argv[]){
 	int socketEcoute;
 
@@ -148,6 +163,8 @@ int main(int argc, char *argv[]){
 
 			send(joueur2, &indiceJoueur1, sizeof(indiceJoueur1), 0);  // Envoi de la position choisi 
 
+			verifier_etat_jeu(tab,messageEnvoye,'X','O');
+			send(joueur2, messageEnvoye, strlen(messageEnvoye) + 1, 0);
 
 			lus = recv(joueur2, &indiceJoueur2, sizeof(indiceJoueur2), 0);
 
@@ -160,6 +177,7 @@ int main(int argc, char *argv[]){
 			//send(joueur1, envoie, strlen(envoie) + 1, 0);  // Envoi de l'état de la grille
 			//send(joueur2, envoie, strlen(envoie) + 1, 0);  // Envoi de l'état de la grille
 
+			/*
 			switch(lus) {
 				case -1: // une erreur !
 						perror("recv");
@@ -170,34 +188,16 @@ int main(int argc, char *argv[]){
 						close(socketDialogue);
 					return 0;
 				default: // recuperation de la position 
-						// Verifie une victoire de 'X'
-						if ( check_victory(tab,'X') ){
-							strncpy(messageEnvoye,"Xwins", LG_MESSAGE - 1);
-						} else {
-							// verification si la grille est vide ou non 
-							if (check_empty(tab) == 0){
-								strncpy(messageEnvoye,"Xends", LG_MESSAGE - 1);
-							} else {
-
-								// verification victoire de O
-								if ( check_victory(tab,'O') ){
-									strncpy(messageEnvoye,"Owins", LG_MESSAGE - 1);
-								} else {
-									if ( check_empty(tab) == 0){
-										strncpy(messageEnvoye,"Oends", LG_MESSAGE - 1);
-									} else {
-										strncpy(messageEnvoye,"continue", LG_MESSAGE - 1);
-									}
-								}
-							}
-						}
+						
 
 					break;
 
 			}
-				
-			send(joueur1, messageEnvoye, strlen(messageEnvoye) + 1, 0);  // Envoi de l'état de la grille
-			send(joueur2, messageEnvoye, strlen(messageEnvoye) + 1, 0);  // Envoi de l'état de la grille
+			*/
+			
+			verifier_etat_jeu(tab,messageEnvoye,'O','X');
+			send(joueur1, messageEnvoye, strlen(messageEnvoye) + 1, 0);  
+			  
 
 		}
 
