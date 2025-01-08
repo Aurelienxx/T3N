@@ -144,16 +144,6 @@ int main(int argc, char *argv[]){
 						printf("%s\n", reponse);
 					}
 					while(strcmp(reponse, "continue") == 0);
-					
-					if(strcmp(reponse, "Xwins") == 0)  {
-						printf("Vous avez gagné la partie !\n");
-					}
-					else if((strcmp(reponse, "Xends") == 0) | (strcmp(reponse, "Oends") == 0))  {
-						printf("Égalité ! Personne n'a gagné la partie, tout le monde a perdu.\n");
-					}
-					else if(strcmp(reponse, "Owins") == 0)  {
-						printf("Vous avez perdu la partie .\n");
-					}
 
 				}  else {
 					
@@ -175,20 +165,9 @@ int main(int argc, char *argv[]){
 							affichage(tab, sizeof(tab)); 
 						}				
 
-						
 						printf("%s\n", reponse);
 					}
 					while(strcmp(reponse, "continue") == 0);
-
-					if(strcmp(reponse, "Xwins") == 0)  {
-						printf("Vous avez perdu la partie .\n");
-					}
-					else if((strcmp(reponse, "Xends") == 0) | (strcmp(reponse, "Oends") == 0))  {
-						printf("Égalité ! Personne n'a gagné la partie, tout le monde a perdu.\n");
-					}
-					else if(strcmp(reponse, "Owins") == 0)  {
-						printf("Vous avez gagné la partie !\n");
-					}
 
 				}
 			break;
@@ -196,6 +175,16 @@ int main(int argc, char *argv[]){
 
 	// On ferme la ressource avant de quitter
 	close(descripteurSocket);
+
+	if(strcmp(reponse, "Xwins") == 0)  {
+		printf("Vous avez perdu la partie .\n");
+	}
+	else if((strcmp(reponse, "Xends") == 0) | (strcmp(reponse, "Oends") == 0))  {
+		printf("Égalité ! Personne n'a gagné la partie, tout le monde a perdu.\n");
+	}
+	else if(strcmp(reponse, "Owins") == 0)  {
+		printf("Vous avez gagné la partie !\n");
+	}
 
 	return 0;
 }

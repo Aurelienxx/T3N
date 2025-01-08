@@ -82,6 +82,48 @@ void verifier_etat_jeu(char tab[9], char *messageEnvoye, char joueur_actuel, cha
     }
 }
 
+typedef struct {
+    int joueur1;
+    int joueur2;
+    char tab[9];
+} Partie;
+
+void gerer_partie(int joueur1, int joueur2) {
+    char tab[] = {'1', '2', '3', '4', '5', '6', '7', '8', '9'};
+    char messageEnvoye[LG_MESSAGE];
+    int indiceJoueur1, indiceJoueur2;
+    int lus;
+
+    send(joueur1, "startPlayer1", strlen("startPlayer1") + 1, 0);
+    send(joueur2, "startPlayer2", strlen("startPlayer2") + 1, 0);
+
+    while (1) {
+        lus = recv(joueur1, &indiceJoueur1, sizeof(indiceJoueur1), 0);
+
+
+        tab[indiceJoueur1] = 'X';
+        send(joueur2, &indiceJoueur1, sizeof(indiceJoueur1), 0);
+
+        verifier_etat_jeu(tab, messageEnvoye, 'X', 'O');
+        send(joueur2, messageEnvoye, strlen(messageEnvoye) + 1, 0);
+
+
+        lus = recv(joueur2, &indiceJoueur2, sizeof(indiceJoueur2), 0);
+
+
+        tab[indiceJoueur2] = 'O';
+        send(joueur1, &indiceJoueur2, sizeof(indiceJoueur2), 0);
+
+        verifier_etat_jeu(tab, messageEnvoye, 'O', 'X');
+        send(joueur1, messageEnvoye, strlen(messageEnvoye) + 1, 0);
+
+        if (strcmp(messageEnvoye, "continue") != 0) break;
+    }
+
+    close(joueur1);
+    close(joueur2);
+}
+
 int main(int argc, char *argv[]){
 	int socketEcoute;
 
@@ -90,11 +132,10 @@ int main(int argc, char *argv[]){
 
 	int socketDialogue;
 	int joueur1,joueur2;
-	int indiceJoueur1, indiceJoueur2;
+	
 	struct sockaddr_in pointDeRencontreDistant;
 	char messageRecu[LG_MESSAGE]; /* le message de la couche Application ! */
 	char messageEnvoye[LG_MESSAGE];
-	char tab[] = {'1', '2', '3', '4', '5', '6', '7', '8', '9'};
 	int ecrits, lus; /* nb d’octets ecrits et lus */
 	int retour;
 
@@ -135,143 +176,25 @@ int main(int argc, char *argv[]){
 
 	while (1){
 
-		printf("Attente d’une demande de connexion (quitter avec Ctrl-C)\n\n");
-
 		printf("Attente des connexions des joueurs ...\n");
+
 		joueur1 = accept(socketEcoute, (struct sockaddr *)&pointDeRencontreDistant, &longueurAdresse);
-		if (joueur1 < 0) {
-			perror("accept joueur1");
-			exit(-4);
-		}
-		printf("Joueur 1 connecté.\n");
+
+        printf("Joueur 1 connecté.\n");
 
 		joueur2 = accept(socketEcoute, (struct sockaddr *)&pointDeRencontreDistant, &longueurAdresse);
-		if (joueur2 < 0) {
-			perror("accept joueur2");
-			exit(-5);
-		}
-		printf("Joueur 2 connecté.\n");
 
-		send(joueur1, "startPlayer1", strlen("startPlayer1") + 1, 0);
-		send(joueur2, "startplayer2", strlen("startplayer2") + 1, 0);
-		
-		// boucle d’attente de connexion : en théorie, un serveur attend indéfiniment ! 
-		while(1){
-			lus = recv(joueur1, &indiceJoueur1, sizeof(indiceJoueur1), 0);
-			
-			tab[indiceJoueur1] = 'X';
+        printf("Joueur 2 connecté.\n");
 
-			send(joueur2, &indiceJoueur1, sizeof(indiceJoueur1), 0);  // Envoi de la position choisi 
 
-			verifier_etat_jeu(tab,messageEnvoye,'X','O');
-			send(joueur2, messageEnvoye, strlen(messageEnvoye) + 1, 0);
+		int lefork = fork();
+        if (lefork == 0) { // Programme fils
+            close(socketEcoute); 
+            gerer_partie(joueur1, joueur2); 
+            return 0; 
+        }
 
-			lus = recv(joueur2, &indiceJoueur2, sizeof(indiceJoueur2), 0);
-
-			tab[indiceJoueur2] = 'O';
-
-			send(joueur1, &indiceJoueur2, sizeof(indiceJoueur2), 0);  // Envoi de la position choisi 
-
-			//char envoie[] = "continue";
-			//strncpy(messageEnvoye,"continue", LG_MESSAGE - 1);
-			//send(joueur1, envoie, strlen(envoie) + 1, 0);  // Envoi de l'état de la grille
-			//send(joueur2, envoie, strlen(envoie) + 1, 0);  // Envoi de l'état de la grille
-
-			/*
-			switch(lus) {
-				case -1: // une erreur !
-						perror("recv");
-						close(socketDialogue);
-					exit(-5);
-				case 0: // la socket est fermée
-						fprintf(stderr, "La socket a été fermée par le client !\n");
-						close(socketDialogue);
-					return 0;
-				default: // recuperation de la position 
-						
-
-					break;
-
-			}
-			*/
-			
-			verifier_etat_jeu(tab,messageEnvoye,'O','X');
-			send(joueur1, messageEnvoye, strlen(messageEnvoye) + 1, 0);  
-			  
-
-		}
-
-		close(joueur1);
-		close(joueur2);
-
-		/*
-		// c’est un appel bloquant
-		socketDialogue = accept(socketEcoute, (struct sockaddr *)&pointDeRencontreDistant, &longueurAdresse);
-		if (socketDialogue < 0) {
-   			perror("accept");
-			close(socketDialogue);
-   			close(socketEcoute);
-   			exit(-4);
-		}
-		
-		char message[] = "start";
-		send(socketDialogue, message, strlen(message) + 1, 0);
-
-		// On réception les données du client (cf. protocole)
-		//lus = read(socketDialogue, messageRecu, LG_MESSAGE*sizeof(char)); // ici appel bloquant
-
-		int joueur,ordinateur ;
-		while (1){
-			lus = recv(socketDialogue, &joueur, sizeof(joueur), 0); // Attente de la réception des données
-			
-			switch(lus) {
-				case -1: // une erreur !
-						perror("recv");
-						close(socketDialogue);
-					exit(-5);
-				case 0: // la socket est fermée
-						fprintf(stderr, "La socket a été fermée par le client !\n");
-						close(socketDialogue);
-					return 0;
-				default: // recuperation de la position 
-						tab[joueur] = 'X';
-
-						// Verifie une victoire de 'X'
-						if ( check_victory(tab,'X') ){
-							strncpy(messageEnvoye,"Xwins", LG_MESSAGE - 1);
-						} else {
-							// verification si la grille est vide ou non 
-							if (check_empty(tab) == 0){
-								strncpy(messageEnvoye,"Xends", LG_MESSAGE - 1);
-							} else {
-								position_alea(tab, &ordinateur);
-								tab[ordinateur] = 'O';
-
-								// verification victoire de O
-								if ( check_victory(tab,'O') ){
-									strncpy(messageEnvoye,"Owins", LG_MESSAGE - 1);
-								} else {
-									if ( check_empty(tab) == 0){
-										strncpy(messageEnvoye,"Oends", LG_MESSAGE - 1);
-									} else {
-										strncpy(messageEnvoye,"continue", LG_MESSAGE - 1);
-									}
-								}
-							}
-						}
-
-					break;
-
-			}
-			
-			send(socketDialogue, &ordinateur, sizeof(ordinateur), 0);  // Envoi de la position choisi 
-			send(socketDialogue, messageEnvoye, strlen(messageEnvoye) + 1, 0);  // Envoi de l'état de la grille
-			
-		}	
-		
-        close(socketDialogue);
-		*/
-
+        
 	}
 	
 
