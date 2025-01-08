@@ -18,7 +18,7 @@ void position_alea(char grille[9], int *pos_x) {
     int nb_vide = 0;
 
     for (int i = 0; i < 9; i++) {
-        if (grille[i] == ' ') {
+        if ((grille[i] != 'X') | (grille[i] == 'O')) {
             vide[nb_vide] = i;
             nb_vide++;
         }
@@ -34,7 +34,7 @@ int check_empty(char grille[9]){
 	int nb_vide = 0;
 
 	for ( int i = 0; i < 9; i++){
-		if (grille[i] == ' '){
+		if ((grille[i] != 'X') | (grille[i] == 'O')){
 			nb_vide = nb_vide + 1;
 		}
 	}
@@ -94,7 +94,7 @@ int main(int argc, char *argv[]){
 	struct sockaddr_in pointDeRencontreDistant;
 	char messageRecu[LG_MESSAGE]; /* le message de la couche Application ! */
 	char messageEnvoye[LG_MESSAGE];
-	char tab[] = {' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' '};
+	char tab[] = {'1', '2', '3', '4', '5', '6', '7', '8', '9'};
 	int ecrits, lus; /* nb d’octets ecrits et lus */
 	int retour;
 

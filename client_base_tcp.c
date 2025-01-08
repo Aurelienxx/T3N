@@ -27,11 +27,11 @@ int check_position(int position, char plateau[], int joueur)  {
         return 0;
     }
     else  {
-        if(plateau[position] != ' ')  {
+        if((plateau[position] == 'X') | (plateau[position] == 'O'))  {
             printf("La position rentrée est déjà occupée.");
             return 0;
         }
-        else if (plateau[position] == ' ')  {
+        else if ((plateau[position] != 'X') | (plateau[position] != 'O'))  {
             if(joueur == 1)  {
                 plateau[position] = 'X';
                 return 1;
@@ -61,7 +61,7 @@ int main(int argc, char *argv[]){
 	char reponse[LG_MESSAGE];
 	int nb; /* nb d’octets écrits et lus */
 
-	char tab[] = {' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' '};
+	char tab[] = {'1', '2', '3', '4', '5', '6', '7', '8', '9'};
 
 	char ip_dest[16];
 	int  port_dest;
