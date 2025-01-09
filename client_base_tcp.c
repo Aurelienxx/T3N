@@ -125,8 +125,9 @@ int main(int argc, char *argv[]){
 			break;
 		
 		default:
-				if (strcmp(buffer, "startPlayer1") == 0) {					 
-					printf("Message start player 1 recu \n");
+				printf ("%s\n\n",buffer);
+
+				if (strcmp(buffer, "startPlayer1") == 0) {	
 
 					do  {
 						affichage(tab, sizeof(tab));
@@ -145,10 +146,8 @@ int main(int argc, char *argv[]){
 					}
 					while(strcmp(reponse, "continue") == 0);
 
-				}  else {
+				}  else  if (strcmp(buffer, "startPlayer2")==0) {
 					
-					printf("Message start player 2 recu \n");
-
 					do  {
 						nb = recv(descripteurSocket, &ordinateur, sizeof(ordinateur),0);
 						tab[ordinateur] = 'X';
@@ -166,6 +165,29 @@ int main(int argc, char *argv[]){
 						}				
 
 						printf("%s\n", reponse);
+					}
+					while(strcmp(reponse, "continue") == 0);
+
+				} else {
+					int tour;
+
+					do  {
+						nb = recv(descripteurSocket, &ordinateur, sizeof(ordinateur),0);
+						etat = recv(descripteurSocket, &reponse, LG_MESSAGE, 0);	
+
+						if (tour % 2 != 0)
+						{
+							tab[ordinateur] = 'O';
+						}
+						else
+						{
+							tab[ordinateur] = 'X';
+						}
+												
+						affichage(tab, sizeof(tab));
+
+						printf("%s\n", reponse);
+						tour ++;
 					}
 					while(strcmp(reponse, "continue") == 0);
 

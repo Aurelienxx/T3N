@@ -68,27 +68,28 @@ int check_victory(char tab[9], char symbol) {
 }
 
 /* Verfication victoire */
-void verifier_etat_jeu(char tab[9], char *messageEnvoye, char joueur_actuel, char autre_joueur) {
-    if (check_victory(tab, joueur_actuel)) {
-        snprintf(messageEnvoye, LG_MESSAGE, "%cwins", joueur_actuel); 
-    } else if (check_empty(tab) == 0) {
-        snprintf(messageEnvoye, LG_MESSAGE, "%cends", joueur_actuel); 
-    } else if (check_victory(tab, autre_joueur)) {
-        snprintf(messageEnvoye, LG_MESSAGE, "%cwins", autre_joueur); 
-    } else if (check_empty(tab) == 0) {
-        snprintf(messageEnvoye, LG_MESSAGE, "%cends", autre_joueur); 
-    } else {
-        strncpy(messageEnvoye, "continue", LG_MESSAGE - 1); 
-    }
+void verifier_etat_jeu(char tab[9], char *messageEnvoye) {
+	if ( check_victory(tab,'X') ){
+		strncpy(messageEnvoye,"Xwins", LG_MESSAGE - 1);
+	} else {
+		if (check_empty(tab) == 0){
+			strncpy(messageEnvoye,"Xends", LG_MESSAGE - 1);
+		} else {
+
+			if ( check_victory(tab,'O') ){
+				strncpy(messageEnvoye,"Owins", LG_MESSAGE - 1);
+			} else {
+				if ( check_empty(tab) == 0){
+					strncpy(messageEnvoye,"Oends", LG_MESSAGE - 1);
+				} else {
+					strncpy(messageEnvoye,"continue", LG_MESSAGE - 1);
+				}
+			}
+		}
+	}
 }
 
-typedef struct {
-    int joueur1;
-    int joueur2;
-    char tab[9];
-} Partie;
-
-void gerer_partie(int joueur1, int joueur2) {
+void gerer_partie(int joueur1, int joueur2, int spectateur[LG_MESSAGE], int nb_spectateur) {
     char tab[] = {'1', '2', '3', '4', '5', '6', '7', '8', '9'};
     char messageEnvoye[LG_MESSAGE];
     int indiceJoueur1, indiceJoueur2;
@@ -97,28 +98,44 @@ void gerer_partie(int joueur1, int joueur2) {
     send(joueur1, "startPlayer1", strlen("startPlayer1") + 1, 0);
     send(joueur2, "startPlayer2", strlen("startPlayer2") + 1, 0);
 
+	for (int i = 0; i < nb_spectateur; i++) {
+		send(spectateur[i], "startSpectateur", strlen("startSpectateur") + 1, 0);
+	}
+
     while (1) {
         lus = recv(joueur1, &indiceJoueur1, sizeof(indiceJoueur1), 0);
-
 
         tab[indiceJoueur1] = 'X';
         send(joueur2, &indiceJoueur1, sizeof(indiceJoueur1), 0);
 
-        verifier_etat_jeu(tab, messageEnvoye, 'X', 'O');
+        verifier_etat_jeu(tab, messageEnvoye);
         send(joueur2, messageEnvoye, strlen(messageEnvoye) + 1, 0);
 
-
+		for (int i = 0 ; i < nb_spectateur; i++){
+			send(spectateur[i], &indiceJoueur1, sizeof(indiceJoueur1),0);
+			send(spectateur[i], messageEnvoye, strlen(messageEnvoye) + 1, 0);
+		}
+		
         lus = recv(joueur2, &indiceJoueur2, sizeof(indiceJoueur2), 0);
 
 
         tab[indiceJoueur2] = 'O';
         send(joueur1, &indiceJoueur2, sizeof(indiceJoueur2), 0);
 
-        verifier_etat_jeu(tab, messageEnvoye, 'O', 'X');
+        verifier_etat_jeu(tab, messageEnvoye);
         send(joueur1, messageEnvoye, strlen(messageEnvoye) + 1, 0);
 
+		for (int i = 0; i < nb_spectateur; i++){
+			send(spectateur[i], &indiceJoueur2, sizeof(indiceJoueur2),0);
+			send(spectateur[i], messageEnvoye, strlen(messageEnvoye) + 1, 0);
+		}
+		
         if (strcmp(messageEnvoye, "continue") != 0) break;
     }
+
+	for (int i = 0; i < nb_spectateur; i++) {
+		close(spectateur[i]);
+	}
 
     close(joueur1);
     close(joueur2);
@@ -131,7 +148,8 @@ int main(int argc, char *argv[]){
 	socklen_t longueurAdresse;
 
 	int socketDialogue;
-	int joueur1,joueur2;
+	int joueur1, joueur2, nb_spectateur;
+	int spectateurs[LG_MESSAGE];
 	
 	struct sockaddr_in pointDeRencontreDistant;
 	char messageRecu[LG_MESSAGE]; /* le message de la couche Application ! */
@@ -174,6 +192,8 @@ int main(int argc, char *argv[]){
 	}
 	printf("Socket placée en écoute passive ...\n");
 
+	
+
 	while (1){
 
 		printf("Attente des connexions des joueurs ...\n");
@@ -186,11 +206,16 @@ int main(int argc, char *argv[]){
 
         printf("Joueur 2 connecté.\n");
 
+		nb_spectateur = 0;
+		while (nb_spectateur < 1) {
+            spectateurs[nb_spectateur] = accept(socketEcoute, (struct sockaddr *)&pointDeRencontreDistant, &longueurAdresse);
+			nb_spectateur++;
+        }
 
 		int lefork = fork();
         if (lefork == 0) { // Programme fils
             close(socketEcoute); 
-            gerer_partie(joueur1, joueur2); 
+            gerer_partie(joueur1, joueur2, spectateurs, nb_spectateur); 
             return 0; 
         }
 
