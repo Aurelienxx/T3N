@@ -89,6 +89,7 @@ void verifier_etat_jeu(char tab[9], char *messageEnvoye) {
 	}
 }
 
+// S'occupe du jeu, le modère.
 void gerer_partie(int joueur1, int joueur2, int spectateur[LG_MESSAGE], int nb_spectateur) {
     char tab[] = {'1', '2', '3', '4', '5', '6', '7', '8', '9'};
     char messageEnvoye[LG_MESSAGE];

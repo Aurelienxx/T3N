@@ -10,6 +10,7 @@
 
 #define LG_MESSAGE 256
 
+// Affichage de la grille/ du plateau de jeu.
 void affichage(char tableau[], int taille){
     for (int i = 0; i < taille; i++) {
         printf("| %c ", tableau[i]); 
@@ -21,6 +22,7 @@ void affichage(char tableau[], int taille){
     printf("\n\n");
 }
 
+// Vérifie que la position entrée par le joueur est correcte.
 int check_position(int position, char plateau[], int joueur)  {
     if((position < 0) | (position > 8))  {
         printf("La position rentrée est incorrecte.");
@@ -44,6 +46,7 @@ int check_position(int position, char plateau[], int joueur)  {
     }
 }
 
+//Demande au joueur d'entrer une position et vérifie si elle est correcte.
 void input_verificator(char tab[9], int *position, int joueur) {
     do {
         printf("Veuillez rentrer la position dans laquelle vous voulez jouer (1-9) : ");
@@ -126,7 +129,7 @@ int main(int argc, char *argv[]){
 		
 		default:
 				printf ("%s\n\n",buffer);
-
+				// Définit l'indice du joueur.
 				if (strcmp(buffer, "startPlayer1") == 0) {	
 
 					do  {
@@ -167,7 +170,7 @@ int main(int argc, char *argv[]){
 						printf("%s\n", reponse);
 					}
 					while(strcmp(reponse, "continue") == 0);
-
+					// Plus que 2 joueurs, donc cette partie du code gère les spectateurs.
 				} else {
 					int tour;
 
