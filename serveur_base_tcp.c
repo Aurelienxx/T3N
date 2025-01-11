@@ -8,9 +8,24 @@
 #include <arpa/inet.h> /* pour htons et inet_aton */
 #include <time.h>
 
+#include <pthread.h>
+
 #define PORT 5000 //(ports >= 5000 réservés pour usage explicite)
 
 #define LG_MESSAGE 256
+
+#define MAX_PARTIES 100
+
+typedef struct {
+    int joueur1;
+    int joueur2;
+    int spectateurs[LG_MESSAGE];
+    int nb_spectateurs;
+    char tab[9];
+} Partie;
+
+Partie parties[MAX_PARTIES];
+int nb_parties = 0;
 
 /* Choisi une position aléatoirement */
 void position_alea(char grille[9], int *pos_x) {
@@ -18,7 +33,7 @@ void position_alea(char grille[9], int *pos_x) {
     int nb_vide = 0;
 
     for (int i = 0; i < 9; i++) {
-        if ((grille[i] != 'X') | (grille[i] == 'O')) {
+        if (grille[i] != 'X' && grille[i] != 'O') {
             vide[nb_vide] = i;
             nb_vide++;
         }
@@ -69,77 +84,109 @@ int check_victory(char tab[9], char symbol) {
 
 /* Verfication victoire */
 void verifier_etat_jeu(char tab[9], char *messageEnvoye) {
-	if ( check_victory(tab,'X') ){
-		strncpy(messageEnvoye,"Xwins", LG_MESSAGE - 1);
-	} else {
-		if (check_empty(tab) == 0){
-			strncpy(messageEnvoye,"Xends", LG_MESSAGE - 1);
-		} else {
+    if (check_victory(tab, 'X')) {
+        strncpy(messageEnvoye, "Xwins", LG_MESSAGE - 1);
+    } else if (check_empty(tab) == 0) {
+        strncpy(messageEnvoye, "Xends", LG_MESSAGE - 1);
+    } else if (check_victory(tab, 'O')) {
+        strncpy(messageEnvoye, "Owins", LG_MESSAGE - 1);
+    } else if (check_empty(tab) == 0) {
+        strncpy(messageEnvoye, "Oends", LG_MESSAGE - 1);
+    } else {
+        strncpy(messageEnvoye, "continue", LG_MESSAGE - 1);
+    }
+}
 
-			if ( check_victory(tab,'O') ){
-				strncpy(messageEnvoye,"Owins", LG_MESSAGE - 1);
-			} else {
-				if ( check_empty(tab) == 0){
-					strncpy(messageEnvoye,"Oends", LG_MESSAGE - 1);
-				} else {
-					strncpy(messageEnvoye,"continue", LG_MESSAGE - 1);
-				}
-			}
-		}
-	}
+// Réinitialise une partie
+void supprimer_partie(Partie *partie) {
+    partie->joueur1 = -1;
+    partie->joueur2 = -1;
+    for (int i = 0; i < partie->nb_spectateurs; i++) {
+        partie->spectateurs[i] = -1;
+    }
+    partie->nb_spectateurs = 0;
+    for (int i = 0; i < 9; i++) {
+        partie->tab[i] = '1' + i;
+    }
 }
 
 // S'occupe du jeu, le modère.
-void gerer_partie(int joueur1, int joueur2, int spectateur[LG_MESSAGE], int nb_spectateur) {
-    char tab[] = {'1', '2', '3', '4', '5', '6', '7', '8', '9'};
+void gerer_partie(Partie *partie) {
     char messageEnvoye[LG_MESSAGE];
     int indiceJoueur1, indiceJoueur2;
     int lus;
 
-    send(joueur1, "startPlayer1", strlen("startPlayer1") + 1, 0);
-    send(joueur2, "startPlayer2", strlen("startPlayer2") + 1, 0);
+    send(partie->joueur1, "startPlayer1", strlen("startPlayer1") + 1, 0);
+    send(partie->joueur2, "startPlayer2", strlen("startPlayer2") + 1, 0);
 
-	for (int i = 0; i < nb_spectateur; i++) {
-		send(spectateur[i], "startSpectateur", strlen("startSpectateur") + 1, 0);
-	}
-
-    while (1) {
-        lus = recv(joueur1, &indiceJoueur1, sizeof(indiceJoueur1), 0);
-
-        tab[indiceJoueur1] = 'X';
-        send(joueur2, &indiceJoueur1, sizeof(indiceJoueur1), 0);
-
-        verifier_etat_jeu(tab, messageEnvoye);
-        send(joueur2, messageEnvoye, strlen(messageEnvoye) + 1, 0);
-
-		for (int i = 0 ; i < nb_spectateur; i++){
-			send(spectateur[i], &indiceJoueur1, sizeof(indiceJoueur1),0);
-			send(spectateur[i], messageEnvoye, strlen(messageEnvoye) + 1, 0);
-		}
-		
-        lus = recv(joueur2, &indiceJoueur2, sizeof(indiceJoueur2), 0);
-
-
-        tab[indiceJoueur2] = 'O';
-        send(joueur1, &indiceJoueur2, sizeof(indiceJoueur2), 0);
-
-        verifier_etat_jeu(tab, messageEnvoye);
-        send(joueur1, messageEnvoye, strlen(messageEnvoye) + 1, 0);
-
-		for (int i = 0; i < nb_spectateur; i++){
-			send(spectateur[i], &indiceJoueur2, sizeof(indiceJoueur2),0);
-			send(spectateur[i], messageEnvoye, strlen(messageEnvoye) + 1, 0);
-		}
-		
-        if (strcmp(messageEnvoye, "continue") != 0) break;
+    for (int i = 0; i < partie->nb_spectateurs; i++) {
+        send(partie->spectateurs[i], "startSpectateur", strlen("startSpectateur") + 1, 0);
     }
 
-	for (int i = 0; i < nb_spectateur; i++) {
-		close(spectateur[i]);
-	}
+    while (1) {
+        lus = recv(partie->joueur1, &indiceJoueur1, sizeof(indiceJoueur1), 0);
+        if (lus <= 0) {  
+            partie->joueur1 = -1;  
+        } else {
+            partie->tab[indiceJoueur1] = 'X';
+            send(partie->joueur2, &indiceJoueur1, sizeof(indiceJoueur1), 0);
+        }
 
-    close(joueur1);
-    close(joueur2);
+        verifier_etat_jeu(partie->tab, messageEnvoye);
+        send(partie->joueur2, messageEnvoye, strlen(messageEnvoye) + 1, 0);
+        send(partie->joueur1, messageEnvoye, strlen(messageEnvoye) + 1, 0);
+
+        for (int i = 0; i < partie->nb_spectateurs; i++) {
+            send(partie->spectateurs[i], partie->tab, sizeof(partie->tab), 0);
+            send(partie->spectateurs[i], messageEnvoye, strlen(messageEnvoye) + 1, 0);
+        }
+
+        if (strcmp(messageEnvoye, "continue") != 0) {
+            break;
+        }
+
+        lus = recv(partie->joueur2, &indiceJoueur2, sizeof(indiceJoueur2), 0);
+        if (lus <= 0) {  
+            partie->joueur2 = -1;  
+        } else {
+            partie->tab[indiceJoueur2] = 'O';
+            send(partie->joueur1, &indiceJoueur2, sizeof(indiceJoueur2), 0);
+        }
+
+        verifier_etat_jeu(partie->tab, messageEnvoye);
+        send(partie->joueur1, messageEnvoye, strlen(messageEnvoye) + 1, 0);
+        send(partie->joueur2, messageEnvoye, strlen(messageEnvoye) + 1, 0);
+
+        for (int i = 0; i < partie->nb_spectateurs; i++) {
+            send(partie->spectateurs[i], partie->tab, sizeof(partie->tab), 0);
+            send(partie->spectateurs[i], messageEnvoye, strlen(messageEnvoye) + 1, 0);
+        }
+
+        if (strcmp(messageEnvoye, "continue") != 0) {
+            break;
+        }
+    }
+
+    // Fermeture des sockets des joueurs et spectateurs
+    if (partie->joueur1 != -1) {
+        close(partie->joueur1);
+    }
+    if (partie->joueur2 != -1) {
+        close(partie->joueur2);
+    }
+    for (int i = 0; i < partie->nb_spectateurs; i++) {
+        if (partie->spectateurs[i] != -1) {
+            close(partie->spectateurs[i]);
+        }
+    }
+
+    supprimer_partie(partie);
+}
+
+void *gerer_partie_thread(void *arg) {
+    Partie *partie = (Partie *)arg;
+    gerer_partie(partie);
+    return NULL; // fin du thread
 }
 
 int main(int argc, char *argv[]){
@@ -193,34 +240,76 @@ int main(int argc, char *argv[]){
 	}
 	printf("Socket placée en écoute passive ...\n");
 
+
+	/*for (int i = 0; i < MAX_PARTIES; i++){
+		parties[i].joueur1 = -1;
+		parties[i].joueur2 = -1;
+	}*/
 	
 
 	while (1){
 
-		printf("Attente des connexions des joueurs ...\n");
-
-		joueur1 = accept(socketEcoute, (struct sockaddr *)&pointDeRencontreDistant, &longueurAdresse);
-
-        printf("Joueur 1 connecté.\n");
-
-		joueur2 = accept(socketEcoute, (struct sockaddr *)&pointDeRencontreDistant, &longueurAdresse);
-
-        printf("Joueur 2 connecté.\n");
-
-		nb_spectateur = 0;
-		while (nb_spectateur < 1) {
-            spectateurs[nb_spectateur] = accept(socketEcoute, (struct sockaddr *)&pointDeRencontreDistant, &longueurAdresse);
-			nb_spectateur++;
+		printf("Attente des connexions ...\n");
+        int client = accept(socketEcoute, (struct sockaddr *)&pointDeRencontreDistant, &longueurAdresse);
+        if (client < 0) {
+            perror("accept");
+            continue;
         }
 
-		int lefork = fork();
-        if (lefork == 0) { // Programme fils
-            close(socketEcoute); 
-            gerer_partie(joueur1, joueur2, spectateurs, nb_spectateur); 
-            return 0; 
-        }
+        char role;
+        recv(client, &role, sizeof(role), 0);
 
-        
+        if (role == 'J') {
+            // Joueur
+            int assigned = 0;
+            for (int i = 0; i < nb_parties; i++) {
+                if (parties[i].joueur1 == 0 || parties[i].joueur2 == 0) {
+                    if (parties[i].joueur1 == 0) {
+                        parties[i].joueur1 = client;
+                    } else {
+                        parties[i].joueur2 = client;
+                    }
+                    assigned = 1;
+
+                    if (parties[i].joueur1 != 0 && parties[i].joueur2 != 0) {
+                        pthread_t thread_id;
+                        pthread_create(&thread_id, NULL, gerer_partie_thread, (void *)&parties[i]);
+                        pthread_detach(thread_id);
+                    }
+                    break;
+                }
+            }
+
+            if (!assigned) {
+                Partie nouvellePartie = {0};
+                nouvellePartie.joueur1 = client;
+                for (int i = 0; i < 9; i++) {
+					nouvellePartie.tab[i] = '1' + i;
+				}
+                parties[nb_parties++] = nouvellePartie;
+            }
+        } else if (role == 'S') {
+            // Spectateur
+            char partie_dispo[LG_MESSAGE] = "";
+            for (int i = 0; i < nb_parties; i++) {
+                if (parties[i].joueur1 == -1 || parties[i].joueur2 == -1) { // la partie est termine 
+                    continue;
+                }
+                char buf[32];
+                snprintf(buf, sizeof(buf), "Partie %d\n", i);
+                strncat(partie_dispo, buf, sizeof(partie_dispo) - strlen(partie_dispo) - 1);
+            }
+
+            send(client, partie_dispo, strlen(partie_dispo) + 1, 0);
+
+            int choix;
+            recv(client, &choix, sizeof(choix), 0);
+            if (choix >= 0 && choix < nb_parties) {
+                Partie *partie = &parties[choix];
+                partie->spectateurs[partie->nb_spectateurs++] = client;
+            }
+        }
+		        
 	}
 	
 
