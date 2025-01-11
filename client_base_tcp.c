@@ -19,7 +19,7 @@ void affichage(char tableau[], int taille){
             printf("|---|---|---|\n");  
         }
     }
-    printf("\n\n");
+    printf("\n");
 }
 
 // Vérifie que la position entrée par le joueur est correcte.
@@ -51,6 +51,7 @@ void input_verificator(char tab[9], int *position, int joueur) {
     do {
         printf("Veuillez rentrer la position dans laquelle vous voulez jouer (1-9) : ");
         scanf("%i", position);
+		printf("\n");
         (*position)--;
     } while (check_position(*position, tab, joueur) == 0); 
 }
@@ -128,16 +129,14 @@ int main(int argc, char *argv[]){
 			break;
 		
 		default:
-				printf ("%s\n\n",buffer);
 				// Définit l'indice du joueur.
 				if (strcmp(buffer, "startPlayer1") == 0) {	
-
+				printf ("Vous êtes le joueur numéro 1 !\n\n");
+				affichage(tab, sizeof(tab));
 					do  {
-						affichage(tab, sizeof(tab));
-						
 						input_verificator(tab,&joueur,1);
 						
-						affichage(tab, sizeof(tab)); 
+						affichage(tab, sizeof(tab));
 						
 						send(descripteurSocket, &joueur, sizeof(joueur),0);
 
@@ -145,11 +144,25 @@ int main(int argc, char *argv[]){
 						tab[ordinateur] = 'O';
 
 						etat = recv(descripteurSocket, &reponse, LG_MESSAGE, 0);
-						printf("%s\n", reponse);
+						if(strcmp(reponse, "continue") == 0)  {
+							printf("La partie continue :\n\n");
+							affichage(tab, sizeof(tab));
+						}
 					}
 					while(strcmp(reponse, "continue") == 0);
+					if(strcmp(reponse, "Xwins") == 0)  {
+						printf("Vous avez gagné la partie !\n\n");
+					}
+					else if((strcmp(reponse, "Xends") == 0) | (strcmp(reponse, "Oends") == 0))  {
+						printf("Égalité ! Personne n'a gagné la partie, tout le monde a perdu.\n\n");
+					}
+					else if(strcmp(reponse, "Owins") == 0)  {
+						printf("Vous avez perdu la partie.\n\n");
+					}
+					affichage(tab, sizeof(tab));
 
 				}  else  if (strcmp(buffer, "startPlayer2")==0) {
+					printf ("Vous êtes le joueur numéro 2 !\n\n");
 					
 					do  {
 						nb = recv(descripteurSocket, &ordinateur, sizeof(ordinateur),0);
@@ -164,14 +177,23 @@ int main(int argc, char *argv[]){
 
 							send(descripteurSocket, &joueur, sizeof(joueur),0);
 
-							affichage(tab, sizeof(tab)); 
-						}				
-
-						printf("%s\n", reponse);
+							affichage(tab, sizeof(tab));
+							printf("La partie continue :\n\n");
+						}
 					}
 					while(strcmp(reponse, "continue") == 0);
+						if(strcmp(reponse, "Xwins") == 0)  {
+							printf("Vous avez perdu la partie.\n");
+						}
+						else if((strcmp(reponse, "Xends") == 0) | (strcmp(reponse, "Oends") == 0))  {
+							printf("Égalité ! Personne n'a gagné la partie, tout le monde a perdu.\n");
+						}
+						else if(strcmp(reponse, "Owins") == 0)  {
+							printf("Vous avez gagné la partie !\n");
+						}
 					// Plus que 2 joueurs, donc cette partie du code gère les spectateurs.
 				} else {
+					printf ("Vous êtes spectateur !\n");
 					int tour;
 
 					do  {
@@ -180,37 +202,34 @@ int main(int argc, char *argv[]){
 
 						if (tour % 2 != 0)
 						{
-							tab[ordinateur] = 'O';
+							printf("C'est au tour du joueur n°1 !\n\n");
+							tab[ordinateur] = 'X';
 						}
 						else
 						{
-							tab[ordinateur] = 'X';
+							printf("C'est au tour du joueur n°2 !\n\n");
+							tab[ordinateur] = 'O';
+							printf("La partie continue :\n\n");
 						}
-												
 						affichage(tab, sizeof(tab));
-
-						printf("%s\n", reponse);
 						tour ++;
 					}
 					while(strcmp(reponse, "continue") == 0);
-
+					if(strcmp(reponse, "Xwins") == 0)  {
+						printf("Le joueur n°1 a remporté la victoire !\n");
+					}
+					else if((strcmp(reponse, "Xends") == 0) | (strcmp(reponse, "Oends") == 0))  {
+						printf("Égalité ! Personne n'a gagné la partie, tout le monde a perdu.\n");
+					}
+					else if(strcmp(reponse, "Owins") == 0)  {
+						printf("Le joueur n°2 a remporté la victoire !\n");
+					}
 				}
 			break;
 	}
 
 	// On ferme la ressource avant de quitter
 	close(descripteurSocket);
-
-	if(strcmp(reponse, "Xwins") == 0)  {
-		printf("Vous avez perdu la partie .\n");
-	}
-	else if((strcmp(reponse, "Xends") == 0) | (strcmp(reponse, "Oends") == 0))  {
-		printf("Égalité ! Personne n'a gagné la partie, tout le monde a perdu.\n");
-	}
-	else if(strcmp(reponse, "Owins") == 0)  {
-		printf("Vous avez gagné la partie !\n");
-	}
-
 	return 0;
 }
 
